@@ -54,6 +54,10 @@ class DrugNotFoundError(OpenFDAClientError):
     retry=retry_if_exception_type(requests.exceptions.RequestException),
     reraise=True,
 )
+def _get(url: str, params: dict) -> requests.Response:
+    return requests.get(url, params=params, timeout=5)
+
+
 def fetch_adverse_events(
     drug_name: str, limit: int = 100, pages: int = 1, use_cache: bool = True
 ) -> List[Dict[str, Any]]:
@@ -73,7 +77,7 @@ def fetch_adverse_events(
 
     response = None
     try:
-        response = requests.get(BASE_URL, params=params, timeout=5)
+        response = _get(BASE_URL, params)
         if response.status_code == 404:
             raise DrugNotFoundError(
                 f"No adverse event records found for drug: '{clean_name}'"
@@ -91,11 +95,13 @@ def fetch_adverse_events(
         results = data.get("results", [])
 
         for page in range(2, pages + 1):
+            params["skip"] = limit * (page - 1)
+            response = _get(BASE_URL, params)
+            if response.status_code == 404:
+                break
+            response.raise_for_status()
+            results.extend(response.json().get("results", []))
             print(f"Page {page} processed!")
-            params["page"] = page
-            response = requests.get(BASE_URL, params=params, timeout=5)
-            data = response.json()
-            results.extend(data.get("results", []))
 
     except requests.exceptions.Timeout:
         raise OpenFDAClientError(

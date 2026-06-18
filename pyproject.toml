@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+      "requests>=2.32",
+      "tenacity>=9.0",
+      "pydantic>=2.0",
+      "pandas>=2.0",
+      "tabulate>=0.9",
+  ]
