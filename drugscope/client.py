@@ -1,5 +1,9 @@
 from typing import List, Dict, Any
 from drugscope.models import SafetyReportModel
+import hashlib
+import json
+import time
+from pathlib import Path
 import requests
 from tenacity import (
     retry,
@@ -7,9 +11,32 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-# import math
 
 BASE_URL = "https://api.fda.gov/drug/event.json"
+_CACHE_DIR = Path.home() / ".cache" / "drugscope"
+_CACHE_TTL = 86400  # 24 hours
+
+
+def _cache_path(drug_name: str, limit: int, pages: int) -> Path:
+    key = hashlib.sha256(
+        f"{drug_name.strip().upper()}:{limit}:{pages}".encode()
+    ).hexdigest()
+    return _CACHE_DIR / f"{key}.json"
+
+
+def _read_cache(path: Path) -> List[Dict[str, Any]] | None:
+    if not path.exists():
+        return None
+    if time.time() - path.stat().st_mtime > _CACHE_TTL:
+        return None
+    with path.open() as f:
+        return json.load(f)
+
+
+def _write_cache(path: Path, results: List[Dict[str, Any]]) -> None:
+    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as f:
+        json.dump(results, f)
 
 
 class OpenFDAClientError(Exception):
@@ -28,13 +55,23 @@ class DrugNotFoundError(OpenFDAClientError):
     reraise=True,
 )
 def fetch_adverse_events(
-    drug_name: str, limit: int = 100, pages: int = 1
+    drug_name: str, limit: int = 100, pages: int = 1, use_cache: bool = True
 ) -> List[Dict[str, Any]]:
+
+    cache_file: Path | None = (
+        _cache_path(drug_name, limit, pages) if use_cache else None
+    )
+    if cache_file is not None:
+        cached = _read_cache(cache_file)
+        if cached is not None:
+            print(f"Loaded {len(cached)} results from cache.")
+            return cached
 
     clean_name = drug_name.strip().upper()
     search_query = f'patient.drug.medicinalproduct:"{clean_name}"'
     params = {"search": search_query, "limit": limit}
 
+    response = None
     try:
         response = requests.get(BASE_URL, params=params, timeout=5)
         if response.status_code == 404:
@@ -79,6 +116,10 @@ def fetch_adverse_events(
         raise OpenFDAClientError(
             "Received an invalid, malformed response payload from the API."
         )
+
+    if cache_file is not None:
+        _write_cache(cache_file, results)
+
     return results
 
 

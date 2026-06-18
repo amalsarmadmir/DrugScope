@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 import pandas as pd
-from tabulate import tabulate
+# from tabulate import tabulate
 
 from drugscope.aggregator import (
     no_of_serious_reports,
@@ -16,7 +16,6 @@ from drugscope.aggregator import (
 
 
 class TestDrugSafetyAggregations(unittest.TestCase):
-
     def setUp(self):
         """Set up mock data structures representing SafetyReportModel instances."""
         # Setup Mock Report 1: Serious, Male, Age 45, Reaction: Rash (Fatal), Drug: Aspirin
@@ -39,9 +38,7 @@ class TestDrugSafetyAggregations(unittest.TestCase):
         self.mock_report_2.patient.standardized_age = 70.0
 
         reaction_2 = MagicMock(term="Nausea", outcome_label="Recovered")
-        reaction_3 = MagicMock(
-            term="Rash", outcome_label="Recovered"
-        )  # Rash repeated
+        reaction_3 = MagicMock(term="Rash", outcome_label="Recovered")  # Rash repeated
         self.mock_report_2.patient.reactions = [reaction_2, reaction_3]
 
         drug_2a = MagicMock(medicinal_product="DrugX", role="Suspect")
