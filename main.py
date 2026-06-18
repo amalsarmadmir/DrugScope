@@ -1,17 +1,12 @@
 import sys
 import argparse
 from pathlib import Path
-from drugscope.client import fetch_adverse_events, response_to_model_mapping
+from drugscope.client import fetch_adverse_events, response_to_model_mapping, OpenFDAClientError, DrugNotFoundError
 from drugscope.aggregator import run_aggregations_for_report, run_aggregations_for_output
 from drugscope.writer import ReportExporter
 from drugscope.models import SafetyReportModel
 
-def build_drug_scope_report(raw_api_json_list: list[dict], drug_name: str, base_file_name: str, formats: list[str]) -> None:
-    try:
-        reports = [SafetyReportModel.model_validate(item) for item in raw_api_json_list]
-    except Exception as e:
-        print(f"Pydantic Validation Error mapping source records: {e}")
-        sys.exit(1)
+def build_drug_scope_report(reports: list[SafetyReportModel], drug_name: str,base_file_name: str, formats: list[str]) -> None:
 
     if not reports:
         print("No records available to calculate aggregations.")
@@ -40,13 +35,21 @@ def main() -> None:
     args = parser.parse_args()
 
     drug = args.drugname.upper()
-    r = fetch_adverse_events(drug, limit=args.limit)
-    p_r = response_to_model_mapping(r)
+    
+    try:
+        r = fetch_adverse_events(drug, limit=args.limit)
+        p_r = response_to_model_mapping(r)
+    except DrugNotFoundError as e:
+        print(f"No results found: {e}")
+        sys.exit(1)
+    except OpenFDAClientError as e:
+        print(f"API error: {e}")
+        sys.exit(1)
 
     if args.output:
         formats = args.formats or ["json", "csv"]
         run_aggregations_for_output(p_r, drug)
-        build_drug_scope_report(r, drug, args.output, formats)
+        build_drug_scope_report(p_r, drug, args.output, formats)
     else:
         run_aggregations_for_output(p_r, drug)
 

@@ -1,28 +1,35 @@
-from typing import List, Any
+from typing import List
 from drugscope.utilities.helper import print_reactions_chart
 from drugscope.models import SafetyReportModel
+from drugscope.types import RunResultsDict
 import pandas as pd
 from tabulate import tabulate
 
 
 def no_of_serious_reports(reports: List[SafetyReportModel]) -> tuple[float, float, int, int]:
-    active_count = sum(1 for report in reports if getattr(report, 'is_serious_code', None) == '1')
+    active_count = sum(1 for report in reports if report.is_serious_code == '1')
     total_count = len(reports)
+    if total_count == 0:
+        return 0.0,0.0,0,0
     percentage = (active_count/total_count)*100
     return percentage, 100-percentage, active_count,total_count
 
 def sex_percentage(reports: List[SafetyReportModel]) -> tuple[float, float]:
-    male_count= sum(1 for report in reports if getattr(report.patient, 'sex_code', None) == '1')
-    female_count= sum(1 for report in reports if getattr(report.patient, 'sex_code', None) == '2')
+    male_count= sum(1 for report in reports if report.patient.sex_code == '1')
+    female_count= sum(1 for report in reports if report.patient.sex_code == '2')
     total_count = male_count+female_count
+    if total_count == 0:
+        return 0.0,0.0
     male_percent = (male_count/total_count)*100
     female_percent = (female_count/total_count)*100
     return male_percent, female_percent
 
 def age_demographics(reports: List[SafetyReportModel]) -> tuple[pd.DataFrame, float]:
-    age_count = sum([report.patient.standardized_age for report in reports if report.patient.standardized_age is not None ])
-    average_age = age_count/len(reports)
-    df = pd.DataFrame({'Age':[report.patient.standardized_age for report in reports if report.patient.standardized_age is not None ]})
+    if len(reports) == 0:
+        return pd.DataFrame(),0.0
+    valid_ages = [r.patient.standardized_age for r in reports if r.patient.standardized_age is not None]
+    average_age = sum(valid_ages) / len(valid_ages) if valid_ages else 0.0
+    df = pd.DataFrame({'Age':valid_ages})
     #0-17,18-64,65+
     bins = [0, 17, 64, 120]
     labels = ['Pediatrics (<18)', 'Adults 18-64', 'Geriatrics 65+']
@@ -34,12 +41,13 @@ def top_n_reactions(reports: List[SafetyReportModel], n: int = 5) -> list[tuple[
     df = pd.DataFrame({'Reactions':[r.term for report in reports for r in report.patient.reactions]})
     df_counts = df.groupby('Reactions').size().reset_index(name='Count')
     result_df = df_counts.sort_values(by='Count', ascending=False).head(n)
-    result = list(result_df[['Reactions', 'Count']].itertuples(index=False, name=None))
+    result = list(result_df[['Reactions', 'Count']].itertuples(index=False, name='Reaction'))
     return result
 
 def top_patient_outcomes(reports: List[SafetyReportModel], n: int = 3) -> pd.DataFrame:
     df = pd.DataFrame({'Outcome':[r.outcome_label for report in reports for r in report.patient.reactions]})
-    df_summary = df.groupby('Outcome').agg(Count=('Outcome', 'size'),Percentage=('Outcome', lambda x: (len(x)/len(df)) * 100)).reset_index().head(n)
+    df_summary = df.groupby('Outcome').agg(Count=('Outcome', 'size'),Percentage=('Outcome', lambda x: (len(x)/len(df)) * 100)).reset_index()
+    df_summary = df_summary.sort_values(by='Count', ascending=False).head(n)
     return df_summary
 
 def top_interacting_drugs(reports: List[SafetyReportModel], drug_name: str, n: int = 3) -> pd.DataFrame:
@@ -48,7 +56,7 @@ def top_interacting_drugs(reports: List[SafetyReportModel], drug_name: str, n: i
     result_df = df_counts.sort_values(by='Count', ascending=False).head(n)
     return result_df
 
-def run_aggregations_for_report(reports: List[SafetyReportModel], drug_name: str) -> dict[str, Any]:
+def run_aggregations_for_report(reports: List[SafetyReportModel], drug_name: str) -> RunResultsDict:
     """Executes your original functions and organizes the output shapes"""
     serious_pct, non_serious_pct, serious_count, total_count = no_of_serious_reports(reports)
     male_pct, female_pct = sex_percentage(reports)
@@ -79,7 +87,7 @@ def run_aggregations_for_report(reports: List[SafetyReportModel], drug_name: str
     }
 
 def run_aggregations_for_output(reports: List[SafetyReportModel], drug_name: str, n: int = 5) -> None:
-    print(f'=== SAFETY SUMMARY FOR: ASPIRIN ({len(reports)} Reports Evaluated) ===\n')
+    print(f'=== SAFETY SUMMARY FOR: {drug_name.upper()} ({len(reports)} Reports Evaluated) ===\n')
 
     print('[Severity]')
     s_per,ns_per,a_count,t_count = no_of_serious_reports(reports)
@@ -92,7 +100,7 @@ def run_aggregations_for_output(reports: List[SafetyReportModel], drug_name: str
 
     print('[Patient Demographics]')
     m_per,f_per = sex_percentage(reports)
-    print(f'Sex:     {m_per:.0f}% Female | {f_per:.0f}% Male')
+    print(f'Sex:     {f_per:.0f}% Female | {m_per:.0f}% Male')
     summary,average_age = age_demographics(reports)
     print(f'Average Age: {average_age:.2f}')
     print(tabulate(summary, headers='keys', tablefmt='psql', showindex=False),'\n')

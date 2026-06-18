@@ -1,5 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
+from drugscope.utilities.helper import normalize_drug_name
 
 class ReactionModel(BaseModel):
     meddra_version: str = Field(alias="reactionmeddraversionpt")
@@ -26,6 +27,11 @@ class DrugModel(BaseModel):
     dosage_form: Optional[str] = Field(default=None, alias="drugdosageform")
     action_code: Optional[str] = Field(default=None, alias="actiondrug")
 
+    @field_validator('medicinal_product', mode='before')
+    @classmethod
+    def clean_name(cls, v: str) -> str:
+        return normalize_drug_name(v)
+
     @property
     def role(self) -> str:
         """Translates drug characterization codes"""
@@ -50,6 +56,7 @@ class PatientModel(BaseModel):
             # 801 = Years, 802 = Months, 803 = Weeks, 804 = Days
             if self.age_unit == "801": return age
             if self.age_unit == "802": return age / 12
+            if self.age_unit == "803": return age / 52
             if self.age_unit == "804": return age / 365.25
             return age
         except ValueError:

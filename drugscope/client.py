@@ -8,6 +8,9 @@ class OpenFDAClientError(Exception):
     def __init__(self,message):
         super().__init__(message)
 
+class DrugNotFoundError(OpenFDAClientError):
+    pass
+
 def fetch_adverse_events(drug_name: str, limit: int = 100) -> List[Dict[str, Any]]:
 
     clean_name = drug_name.strip().upper()

@@ -1,3 +1,12 @@
+import re
+
+def normalize_drug_name(name: str) -> str:
+    name = name.strip()
+    name = re.sub(r'[.,;:!?\'"]+$', '', name)  # trailing punctuation
+    name = re.sub(r'\s+', ' ', name)            # collapse internal whitespace
+    return name.upper()
+
+
 def print_reactions_chart(data: list[tuple[str, int]], max_bar_length: int = 20) -> None:
     if not data:
         return
