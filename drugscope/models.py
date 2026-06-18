@@ -2,6 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 from drugscope.utilities.helper import normalize_drug_name
 
+
 class ReactionModel(BaseModel):
     meddra_version: str = Field(alias="reactionmeddraversionpt")
     term: str = Field(alias="reactionmeddrapt")
@@ -16,7 +17,7 @@ class ReactionModel(BaseModel):
             "3": "Not Recovered/Not Resolved",
             "4": "Recovered/Resolved with Sequelae",
             "5": "Fatal",
-            "6": "Unknown"
+            "6": "Unknown",
         }
         return mapping.get(self.outcome_code, "Unknown")
 
@@ -27,7 +28,7 @@ class DrugModel(BaseModel):
     dosage_form: Optional[str] = Field(default=None, alias="drugdosageform")
     action_code: Optional[str] = Field(default=None, alias="actiondrug")
 
-    @field_validator('medicinal_product', mode='before')
+    @field_validator("medicinal_product", mode="before")
     @classmethod
     def clean_name(cls, v: str) -> str:
         return normalize_drug_name(v)
@@ -54,10 +55,14 @@ class PatientModel(BaseModel):
         try:
             age = float(self.age_raw)
             # 801 = Years, 802 = Months, 803 = Weeks, 804 = Days
-            if self.age_unit == "801": return age
-            if self.age_unit == "802": return age / 12
-            if self.age_unit == "803": return age / 52
-            if self.age_unit == "804": return age / 365.25
+            if self.age_unit == "801":
+                return age
+            if self.age_unit == "802":
+                return age / 12
+            if self.age_unit == "803":
+                return age / 52
+            if self.age_unit == "804":
+                return age / 365.25
             return age
         except ValueError:
             return None
@@ -65,12 +70,9 @@ class PatientModel(BaseModel):
 
 class SafetyReportModel(BaseModel):
     report_id: str = Field(alias="safetyreportid")
-    country: Optional[str] = Field(default=None, alias="occurcountry")
     is_serious_code: str = Field(alias="serious")
-    company_number: Optional[str] = Field(default=None, alias="companynumb")
     patient: PatientModel
 
     @property
     def is_serious(self) -> bool:
         return self.is_serious_code == "1"
-

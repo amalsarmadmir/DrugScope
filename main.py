@@ -1,12 +1,26 @@
 import sys
 import argparse
 from pathlib import Path
-from drugscope.client import fetch_adverse_events, response_to_model_mapping, OpenFDAClientError, DrugNotFoundError
-from drugscope.aggregator import run_aggregations_for_report, run_aggregations_for_output
+from drugscope.client import (
+    fetch_adverse_events,
+    response_to_model_mapping,
+    OpenFDAClientError,
+    DrugNotFoundError,
+)
+from drugscope.aggregator import (
+    run_aggregations_for_report,
+    run_aggregations_for_output,
+)
 from drugscope.writer import ReportExporter
 from drugscope.models import SafetyReportModel
 
-def build_drug_scope_report(reports: list[SafetyReportModel], drug_name: str,base_file_name: str, formats: list[str]) -> None:
+
+def build_drug_scope_report(
+    reports: list[SafetyReportModel],
+    drug_name: str,
+    base_file_name: str,
+    formats: list[str],
+) -> None:
 
     if not reports:
         print("No records available to calculate aggregations.")
@@ -16,9 +30,9 @@ def build_drug_scope_report(reports: list[SafetyReportModel], drug_name: str,bas
     exporter = ReportExporter(aggregated_results)
 
     try:
-        if 'json' in formats:
+        if "json" in formats:
             exporter.to_json(Path(f"{base_file_name}.json"))
-        if 'csv' in formats:
+        if "csv" in formats:
             exporter.to_csv(Path(f"{base_file_name}.csv"))
         print(f"Successfully generated report artifacts for: {drug_name.upper()}")
     except IOError as err:
@@ -28,16 +42,26 @@ def build_drug_scope_report(reports: list[SafetyReportModel], drug_name: str,bas
 def main() -> None:
     parser = argparse.ArgumentParser(description="DrugScope adverse event report tool")
     parser.add_argument("drugname", type=str, help="Drug name to query")
-    parser.add_argument("--limit", type=int, default=100, help="Max number of records to fetch")
+    parser.add_argument(
+        "--limit", type=int, default=100, help="Max number of records to fetch"
+    )
+    parser.add_argument(
+        "--pages", type=int, default=1, help="Max number of pages to fetch"
+    )
     parser.add_argument("--output", type=str, help="Base file name for output report")
-    parser.add_argument("--format", dest="formats", action="append", choices=["json", "csv"],
-                        help="Output format(s): json, csv (can be specified multiple times)")
+    parser.add_argument(
+        "--format",
+        dest="formats",
+        action="append",
+        choices=["json", "csv"],
+        help="Output format(s): json, csv (can be specified multiple times)",
+    )
     args = parser.parse_args()
 
     drug = args.drugname.upper()
-    
+
     try:
-        r = fetch_adverse_events(drug, limit=args.limit)
+        r = fetch_adverse_events(drug, limit=args.limit, pages=args.pages)
         p_r = response_to_model_mapping(r)
     except DrugNotFoundError as e:
         print(f"No results found: {e}")
@@ -51,6 +75,7 @@ def main() -> None:
         run_aggregations_for_output(p_r, drug)
         build_drug_scope_report(p_r, drug, args.output, formats)
     else:
+        print("Output path not shared! Printing to terminal only.")
         run_aggregations_for_output(p_r, drug)
 
 
