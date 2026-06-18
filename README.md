@@ -38,6 +38,11 @@ pip install -e .
 ```
 python main.py <drugname> [--limit N] [--output FILENAME] [--format json] [--format csv]
 ```
+to run tests
+
+```
+uv run pytest drugscope/tests/test_aggregations.py -v
+```
 
 ### Arguments
 

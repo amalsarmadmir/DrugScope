@@ -107,21 +107,38 @@ def top_interacting_drugs(
     return result_df
 
 
-# Pipelines for report aggregations and printing a summary of the aggregations on the terminal
+# Pipeline: prints a terminal summary and returns structured aggregation results
 
 
-def run_aggregations_for_report(
-    reports: List[SafetyReportModel], drug_name: str
+def run_aggregations(
+    reports: List[SafetyReportModel], drug_name: str, n: int = 5
 ) -> RunResultsDict:
-    """Executes your original functions and organizes the output shapes"""
-    serious_pct, non_serious_pct, serious_count, total_count = no_of_serious_reports(
-        reports
-    )
+    serious_pct, non_serious_pct, serious_count, total_count = no_of_serious_reports(reports)
     male_pct, female_pct = sex_percentage(reports)
     age_df, avg_age = age_demographics(reports)
-    reactions_list = top_n_reactions(reports, n=5)
+    reactions_list = top_n_reactions(reports, n=n)
     outcomes_df = top_patient_outcomes(reports, n=3)
     drugs_df = top_interacting_drugs(reports, drug_name, n=3)
+
+    print(f"=== SAFETY SUMMARY FOR: {drug_name.upper()} ({len(reports)} Reports Evaluated) ===\n")
+
+    print("[Severity]")
+    print(f"Serious Reports: {serious_pct:.0f}%({serious_count})")
+    print(f"Non-Serious:     {non_serious_pct:.0f}%({total_count - serious_count})\n")
+
+    print_reactions_chart(reactions_list)
+    print()
+
+    print("[Patient Demographics]")
+    print(f"Sex:     {female_pct:.0f}% Female | {male_pct:.0f}% Male")
+    print(f"Average Age: {avg_age:.2f}")
+    print(tabulate(age_df, headers="keys", tablefmt="psql", showindex=False), "\n")
+
+    print("[Top Patient Outcomes]")
+    print(tabulate(outcomes_df, headers="keys", tablefmt="psql", showindex=False), "\n")
+
+    print("[Top Concomitant Medications]")
+    print(tabulate(drugs_df, headers="keys", tablefmt="psql", showindex=False), "\n")
 
     return {
         "drug_name": drug_name,
@@ -137,41 +154,9 @@ def run_aggregations_for_report(
         },
         "age_demographics": {
             "average_age": avg_age,
-            "cohorts": age_df,  # DataFrame
+            "cohorts": age_df,
         },
-        "top_reactions": reactions_list,  # List of Tuples
-        "top_outcomes": outcomes_df,  # DataFrame
-        "top_interacting_drugs": drugs_df,  # DataFrame
+        "top_reactions": reactions_list,
+        "top_outcomes": outcomes_df,
+        "top_interacting_drugs": drugs_df,
     }
-
-
-def run_aggregations_for_output(
-    reports: List[SafetyReportModel], drug_name: str, n: int = 5
-) -> None:
-    print(
-        f"=== SAFETY SUMMARY FOR: {drug_name.upper()} ({len(reports)} Reports Evaluated) ===\n"
-    )
-
-    print("[Severity]")
-    s_per, ns_per, a_count, t_count = no_of_serious_reports(reports)
-    print(f"Serious Reports: {s_per:.0f}%({a_count})")
-    print(f"Non-Serious:     {ns_per:.0f}%({t_count - a_count})\n")
-
-    res = top_n_reactions(reports)
-    print_reactions_chart(res)
-    print()
-
-    print("[Patient Demographics]")
-    m_per, f_per = sex_percentage(reports)
-    print(f"Sex:     {f_per:.0f}% Female | {m_per:.0f}% Male")
-    summary, average_age = age_demographics(reports)
-    print(f"Average Age: {average_age:.2f}")
-    print(tabulate(summary, headers="keys", tablefmt="psql", showindex=False), "\n")
-
-    print("[Top Patient Outcomes]")
-    outcomes = top_patient_outcomes(reports)
-    print(tabulate(outcomes, headers="keys", tablefmt="psql", showindex=False), "\n")
-
-    print("[Top Concomitant Medications]")
-    meds = top_interacting_drugs(reports, drug_name)
-    print(tabulate(meds, headers="keys", tablefmt="psql", showindex=False), "\n")

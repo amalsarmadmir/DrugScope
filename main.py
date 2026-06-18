@@ -7,10 +7,7 @@ from drugscope.client import (
     OpenFDAClientError,
     DrugNotFoundError,
 )
-from drugscope.aggregator import (
-    run_aggregations_for_report,
-    run_aggregations_for_output,
-)
+from drugscope.aggregator import run_aggregations
 from drugscope.writer import ReportExporter
 from drugscope.models import SafetyReportModel
 
@@ -26,7 +23,7 @@ def build_drug_scope_report(
         print("No records available to calculate aggregations.")
         return
 
-    aggregated_results = run_aggregations_for_report(reports, drug_name)
+    aggregated_results = run_aggregations(reports, drug_name)
     exporter = ReportExporter(aggregated_results)
 
     try:
@@ -72,11 +69,10 @@ def main() -> None:
 
     if args.output:
         formats = args.formats or ["json", "csv"]
-        run_aggregations_for_output(p_r, drug)
         build_drug_scope_report(p_r, drug, args.output, formats)
     else:
         print("Output path not shared! Printing to terminal only.")
-        run_aggregations_for_output(p_r, drug)
+        run_aggregations(p_r, drug)
 
 
 if __name__ == "__main__":

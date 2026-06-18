@@ -10,8 +10,7 @@ from drugscope.aggregator import (
     top_n_reactions,
     top_patient_outcomes,
     top_interacting_drugs,
-    run_aggregations_for_report,
-    run_aggregations_for_output,
+    run_aggregations,
 )
 
 
@@ -119,25 +118,20 @@ class TestDrugSafetyAggregations(unittest.TestCase):
 
     ## --- TEST PIPELINES ---
 
-    def test_run_aggregations_for_report(self):
-        """Validates that the pipeline accurately maps out RunResultsDict dictionary types."""
-        result = run_aggregations_for_report(self.reports, "DrugX")
+    @patch("drugscope.utilities.helper.print_reactions_chart")
+    @patch("builtins.print")
+    def test_run_aggregations(self, mock_print, mock_print_reactions_chart):
+        """Validates return dict types and that terminal output does not crash."""
+        try:
+            result = run_aggregations(self.reports, "DrugX")
+        except Exception as e:
+            self.fail(f"run_aggregations raised an exception: {e}")
 
         self.assertEqual(result["drug_name"], "DrugX")
         self.assertEqual(result["total_reports"], 2)
         self.assertEqual(result["seriousness"]["serious_count"], 1)
         self.assertIsInstance(result["age_demographics"]["cohorts"], pd.DataFrame)
         self.assertIsInstance(result["top_reactions"], list)
-
-    @patch("drugscope.utilities.helper.print_reactions_chart")
-    @patch("builtins.print")
-    def test_run_aggregations_for_output(self, mock_print, mock_print_reactions_chart):
-        """Tests terminal print orchestration (ensures nothing crashes during tabulate)."""
-        # Execute the printing pipeline runner
-        try:
-            run_aggregations_for_output(self.reports, "DrugX")
-        except Exception as e:
-            self.fail(f"run_aggregations_for_output raised an exception: {e}")
 
 
 if __name__ == "__main__":
