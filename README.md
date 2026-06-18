@@ -36,12 +36,7 @@ pip install -e .
 ## Usage
 
 ```
-python main.py <drugname> [--limit N] [--output FILENAME] [--format json] [--format csv]
-```
-to run tests
-
-```
-uv run pytest drugscope/tests/test_aggregations.py -v
+python main.py <drugname> [--limit N] [--pages N] [--output FILENAME] [--format json] [--format csv]
 ```
 
 ### Arguments
@@ -49,9 +44,24 @@ uv run pytest drugscope/tests/test_aggregations.py -v
 | Argument | Required | Default | Description |
 |---|---|---|---|
 | `drugname` | Yes | — | Drug name to query (case-insensitive) |
-| `--limit` | No | `100` | Maximum number of adverse event records to fetch |
+| `--limit` | No | `100` | Maximum number of adverse event records to fetch per page |
+| `--pages` | No | `1` | Number of pages to fetch (total records = `limit × pages`) |
 | `--output` | No | — | Base filename for the exported report (no extension) |
 | `--format` | No | `json csv` | Output format(s). Pass once per format. Only used when `--output` is set. |
+
+---
+
+## Running Tests
+
+```bash
+uv run pytest drugscope/tests/test_aggregations.py -v
+```
+
+---
+
+## Caching
+
+Responses are cached for 24 hours under `~/.cache/drugscope/`. The cache key is derived from the drug name, `--limit`, and `--pages` values. Subsequent runs with the same arguments return instantly without hitting the API.
 
 ---
 
