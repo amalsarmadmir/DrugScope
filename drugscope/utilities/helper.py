@@ -1,4 +1,4 @@
-def print_reactions_chart(data: list[tuple[str, int]], max_bar_length: int = 20):
+def print_reactions_chart(data: list[tuple[str, int]], max_bar_length: int = 20) -> None:
     if not data:
         return
 

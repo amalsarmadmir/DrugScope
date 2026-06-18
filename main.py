@@ -6,7 +6,7 @@ from drugscope.aggregator import run_aggregations_for_report, run_aggregations_f
 from drugscope.writer import ReportExporter
 from drugscope.models import SafetyReportModel
 
-def build_drug_scope_report(raw_api_json_list: list, drug_name: str, base_file_name: str, formats: list):
+def build_drug_scope_report(raw_api_json_list: list[dict], drug_name: str, base_file_name: str, formats: list[str]) -> None:
     try:
         reports = [SafetyReportModel.model_validate(item) for item in raw_api_json_list]
     except Exception as e:
@@ -30,7 +30,7 @@ def build_drug_scope_report(raw_api_json_list: list, drug_name: str, base_file_n
         print(f"File Output Generation failed due to an I/O exception: {err}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="DrugScope adverse event report tool")
     parser.add_argument("drugname", type=str, help="Drug name to query")
     parser.add_argument("--limit", type=int, default=100, help="Max number of records to fetch")

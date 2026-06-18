@@ -40,7 +40,7 @@ def fetch_adverse_events(drug_name: str, limit: int = 100) -> List[Dict[str, Any
     return results
 
 
-def response_to_model_mapping(raw_reports:List[Dict[str, Any]]):
+def response_to_model_mapping(raw_reports: List[Dict[str, Any]]) -> List[SafetyReportModel]:
 
     parsed_reports: List[SafetyReportModel] = []
 

@@ -1,16 +1,17 @@
-from typing import List,Dict,Any
+from typing import List, Any
 from drugscope.utilities.helper import print_reactions_chart
+from drugscope.models import SafetyReportModel
 import pandas as pd
 from tabulate import tabulate
 
 
-def no_of_serious_reports(reports:List[Dict[str, Any]])->int:
+def no_of_serious_reports(reports: List[SafetyReportModel]) -> tuple[float, float, int, int]:
     active_count = sum(1 for report in reports if getattr(report, 'is_serious_code', None) == '1')
     total_count = len(reports)
     percentage = (active_count/total_count)*100
     return percentage, 100-percentage, active_count,total_count
 
-def sex_percentage(reports:List[Dict[str, Any]])->int:
+def sex_percentage(reports: List[SafetyReportModel]) -> tuple[float, float]:
     male_count= sum(1 for report in reports if getattr(report.patient, 'sex_code', None) == '1')
     female_count= sum(1 for report in reports if getattr(report.patient, 'sex_code', None) == '2')
     total_count = male_count+female_count
@@ -18,7 +19,7 @@ def sex_percentage(reports:List[Dict[str, Any]])->int:
     female_percent = (female_count/total_count)*100
     return male_percent, female_percent
 
-def age_demographics(reports:List[Dict[str, Any]])->int:
+def age_demographics(reports: List[SafetyReportModel]) -> tuple[pd.DataFrame, float]:
     age_count = sum([report.patient.standardized_age for report in reports if report.patient.standardized_age is not None ])
     average_age = age_count/len(reports)
     df = pd.DataFrame({'Age':[report.patient.standardized_age for report in reports if report.patient.standardized_age is not None ]})
@@ -29,25 +30,25 @@ def age_demographics(reports:List[Dict[str, Any]])->int:
     df_summary = df.groupby('Age_Group').agg(Count=('Age_Group', 'size'),Percentage=('Age_Group', lambda x: (len(x)/len(df)) * 100)).reset_index()
     return df_summary, average_age
 
-def top_n_reactions(reports:List[Dict[str, Any]],n:int=5)->int:
+def top_n_reactions(reports: List[SafetyReportModel], n: int = 5) -> list[tuple[str, int]]:
     df = pd.DataFrame({'Reactions':[r.term for report in reports for r in report.patient.reactions]})
     df_counts = df.groupby('Reactions').size().reset_index(name='Count')
     result_df = df_counts.sort_values(by='Count', ascending=False).head(n)
     result = list(result_df[['Reactions', 'Count']].itertuples(index=False, name=None))
     return result
-    
-def top_patient_outcomes(reports:List[Dict[str, Any]],n:int=3)->int:
+
+def top_patient_outcomes(reports: List[SafetyReportModel], n: int = 3) -> pd.DataFrame:
     df = pd.DataFrame({'Outcome':[r.outcome_label for report in reports for r in report.patient.reactions]})
     df_summary = df.groupby('Outcome').agg(Count=('Outcome', 'size'),Percentage=('Outcome', lambda x: (len(x)/len(df)) * 100)).reset_index().head(n)
     return df_summary
 
-def top_interacting_drugs(reports:List[Dict[str, Any]],drug_name:str,n:int=3)->int:
+def top_interacting_drugs(reports: List[SafetyReportModel], drug_name: str, n: int = 3) -> pd.DataFrame:
     df = pd.DataFrame({'Drug':[d.medicinal_product for report in reports for d in report.patient.drugs if (d.role != 'Suspect' and drug_name not in d.medicinal_product)]})
     df_counts = df.groupby('Drug').size().reset_index(name='Count')
     result_df = df_counts.sort_values(by='Count', ascending=False).head(n)
     return result_df
 
-def run_aggregations_for_report(reports: List[Any], drug_name: str) -> dict:
+def run_aggregations_for_report(reports: List[SafetyReportModel], drug_name: str) -> dict[str, Any]:
     """Executes your original functions and organizes the output shapes"""
     serious_pct, non_serious_pct, serious_count, total_count = no_of_serious_reports(reports)
     male_pct, female_pct = sex_percentage(reports)
@@ -77,7 +78,7 @@ def run_aggregations_for_report(reports: List[Any], drug_name: str) -> dict:
         "top_interacting_drugs": drugs_df # DataFrame
     }
 
-def run_aggregations_for_output(reports:List[Dict[str, Any]],drug_name:str,n:int=5)->None:
+def run_aggregations_for_output(reports: List[SafetyReportModel], drug_name: str, n: int = 5) -> None:
     print(f'=== SAFETY SUMMARY FOR: ASPIRIN ({len(reports)} Reports Evaluated) ===\n')
 
     print('[Severity]')
