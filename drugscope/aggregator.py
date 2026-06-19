@@ -114,7 +114,7 @@ def top_interacting_drugs(
                 d.medicinal_product
                 for report in reports
                 for d in report.patient.drugs
-                if (d.role != "Suspect" and drug_name not in d.medicinal_product)
+                if (d.role != "Suspect" and drug_name.lower() not in d.medicinal_product.lower())
             ]
         }
     )
