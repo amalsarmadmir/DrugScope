@@ -58,6 +58,12 @@ def _get(url: str, params: dict) -> requests.Response:
     return requests.get(url, params=params, timeout=5)
 
 
+@retry(
+    stop=stop_after_attempt(4),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(requests.exceptions.RequestException),
+    reraise=True,
+)
 def fetch_adverse_events(
     drug_name: str, limit: int = 100, pages: int = 1, use_cache: bool = True
 ) -> List[Dict[str, Any]]:
@@ -77,7 +83,7 @@ def fetch_adverse_events(
 
     response = None
     try:
-        response = _get(BASE_URL, params)
+        requests.get(BASE_URL, params=params, timeout=5)
         if response.status_code == 404:
             raise DrugNotFoundError(
                 f"No adverse event records found for drug: '{clean_name}'"

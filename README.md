@@ -135,3 +135,8 @@ Average Age: 61.30
 - **Top 5 adverse reactions** — reaction term and report count
 - **Top 3 clinical outcomes** — outcome label, count, and percentage
 - **Top 3 concomitant medications** — co-administered drugs and frequency
+
+
+## Contributors
+
+* Amal Sarmad ([@amalsarmadmir](https://github.com/amalsarmadmir)) 
