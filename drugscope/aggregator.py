@@ -153,6 +153,9 @@ def run_aggregations(
     print("[Top Patient Outcomes]")
     print(tabulate(outcomes_df, headers="keys", tablefmt="psql", showindex=False), "\n")
 
+    print("[Top Suspect Drugs]")
+    print(tabulate(suspect_df, headers="keys", tablefmt="psql", showindex=False), "\n")
+
     print("[Top Concomitant Medications]")
     print(tabulate(drugs_df, headers="keys", tablefmt="psql", showindex=False), "\n")
 
