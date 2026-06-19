@@ -88,6 +88,22 @@ def top_patient_outcomes(reports: List[SafetyReportModel], n: int = 3) -> pd.Dat
     df_summary = df_summary.sort_values(by="Count", ascending=False).head(n)
     return df_summary
 
+def top_suspect_drugs(
+    reports: List[SafetyReportModel], n: int = 3
+) -> pd.DataFrame:
+    df = pd.DataFrame(
+        {
+            "Drug": [
+                d.medicinal_product
+                for report in reports
+                for d in report.patient.drugs
+                if d.role == "Suspect"
+            ]
+        }
+    )
+    df_counts = df.groupby("Drug").size().reset_index(name="Count")
+    result_df = df_counts.sort_values(by="Count", ascending=False).head(n)
+    return result_df
 
 def top_interacting_drugs(
     reports: List[SafetyReportModel], drug_name: str, n: int = 3
